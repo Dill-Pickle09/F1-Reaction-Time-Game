@@ -28,13 +28,32 @@ CIRCLE_STYLE = """
     background: #00ff00;
     box-shadow: 0 0 25px #00ff00;
 }
+
+.flash {
+    animation: flash-red 0.4s ease-in-out;
+}
+@keyframes flash-red {
+    0% { background: #ff0000; }
+    100% { background: transparent; }
+}
+
+.shake {
+    animation: shake 0.5s;
+}
+@keyframes shake {
+    0% { transform: translateX(0px); }
+    25% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-8px); }
+    100% { transform: translateX(0px); }
+}
 </style>
 """
 
 st.markdown(CIRCLE_STYLE, unsafe_allow_html=True)
 
-def show_lights(red_count=0, green=False):
-    html = "<div class='light-row'>"
+def show_lights(red_count=0, green=False, shake=False):
+    html = "<div class='light-row {}'>".format("shake" if shake else"")
 
     for i in range(5):
         if green:
@@ -72,9 +91,7 @@ elif st.session_state.state == "red_sequence":
     show_lights(st.session_state.red_index)
 
     if st.button("STOP"):
-        st.session_state.state = "done"
-        st.session_state.reaction = None
-        st.error("FALSE START!")
+        st.session_state.state = "false_start"
         st.rerun()
     
     if st.session_state.red_index < 5:
@@ -90,9 +107,7 @@ elif st.session_state.state == "waiting_green":
     show_lights(5)
 
     if st.button("STOP"):
-        st.session_state.state = "done"
-        st.session_state.reaction = None
-        st.error("FALSE START!")
+        st.session_state.state = "false_start"
         st.rerun()
 
     if time.time() >= st.session_state.green_time:
@@ -111,6 +126,23 @@ elif st.session_state.state == "green":
         st.session_state.reaction = (time.time() - st.session_state.start_time) * 1000
         st.session_state.state = "done"
         st.rerun()
+
+
+elif st.session_state.state == "false_start":
+    st.markdown("<div class='flash'>", unsafe_allow_html=True)
+    show_lights(shake=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.error("FALSE START. Too early")
+
+    time.sleep(0.8)
+
+    st.session_state.state = "idle"
+    st.session_state.red_index = 0
+    st.session_state.green_time = None
+    st.session_state.start_time = None
+    st.session_state.reaction = None
+    st.rerun()
 
 elif st.session_state.state == "done":
     if st.session_state.reaction is not None:
