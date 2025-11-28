@@ -46,33 +46,47 @@ def show_lights(red_count=0, green=False):
     html += "</div>"
     st.markdown(html, unsafe_allow_html=True)
 
+if "step" not in st.session_state:
+    st.session_state.step = 0
+if "start_time" not in st.session_state:
+    st.session_state.start_time = None
+if "reaction_time" not in st.session_state:
+    st.session_state.reaction_time = None
+if "green_delay" not in st.session_state:
+    st.session_state.green_delay = None
+
 st.title("F1 Reaction Time Test")
 st.write("Wait for all 5 lights to turn **green**, then hit the button as quick as you can!")
 
-if "running" not in st.session_state:
-    st.session_state.running = False
-if "start_time" not in st.session_state:
-    st.session_state.start_time = None
-
-if not st.session_state.running:
+if st.session_state.step == 0:
     if st.button("Start Sequence"):
-        st.session_state.running = True
-        st.rerun()
+        st.session_state.step = 1
+        st.session_state.red_count = 1
+        st.experimental_rerun()
 
-if st.session_state.running:
-    for i in range(1, 6):
-        show_lights(red_count=i)
-        time.sleep(0.6)
-        st.rerun()
+if st.session_state.step == 1:
+    show_lights(red_count=st.session_state.red_count)
 
-    delay = random.uniform(1.0, 1.35)
-    time.sleep(delay)
+    if st.session_state.red_count < 5:
+        if st.button("Next Light"):
+            st.session_state.red_count += 1
+            st.experimental_rerun()
+    else:
+        if st.session_state.green_delay is None:
+            st.session_state.green_delay = time.time() + random.uniform(1.0, 1.35)
+        if time.time() >= st.session_state.green_delay:
+            st.session_state.step = 2
+            st.session_state.start_time = time.time()
+            st.experimental_rerun()
+        else:
+            st.write("Get ready...")
 
+if st.session_state.step == 2:
     show_lights(green=True)
-    st.write("### LIGHTS OUT, CLICK NOW")
-    st. session_state.start_time = time.time()
-
+    st.write("### LIGHTS OUT. CLICK THE BUTTON")
     if st.button("STOP"):
-        reaction = (time.time() - st.session_state.start_time) * 1000
-        st.session_state.running = False
-        st.success(f"**Your Reaction time: `{reaction:.0f} ms`**")
+        st.session_state.reaction_time = (time.time() - st.session_state.start_time) * 1000
+        st.session_state.step = 0
+        st.session_state.green_delay = None
+        st.success(f"**Your Reaction time: {st.session_state.reaction_time:.0f} ms**")
+        st.experimental_rerun()
