@@ -120,8 +120,6 @@ elif st.session_state.state == "waiting_green":
 
 elif st.session_state.state == "green":
     show_lights(green=True)
-    st.write("### GO! STOP NOW")
-
     if st.button("STOP"):
         st.session_state.reaction = (time.time() - st.session_state.start_time) * 1000
         st.session_state.state = "done"
